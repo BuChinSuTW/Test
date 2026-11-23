@@ -1,0 +1,54 @@
+
+name: Build NEON ESP 2D Demo APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "NeonESP2D_Demo_cloudbuild.zip"
+      - ".github/workflows/android-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK, NDK and CMake
+        run: |
+          sdkmanager "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.2.12479018" \
+            "cmake;3.22.1"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.9"
+
+      - name: Extract source
+        run: |
+          unzip -q NeonESP2D_Demo_cloudbuild.zip
+          test -f NeonESP2D_Demo/app/build.gradle
+
+      - name: Build APK
+        working-directory: NeonESP2D_Demo
+        run: gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEON-ESP-2D-demo-debug-apk
+          path: NeonESP2D_Demo/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
